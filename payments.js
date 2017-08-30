@@ -86,11 +86,15 @@ const open = () => {
   const hash_string = values.join('+')
     
   params['MAC'] = crypto.createHash('md5').update(hash_string).digest("hex").toUpperCase()
-  
+  const start = (new Date()).getTime()
+
   request.post('https://payment.checkout.fi')
     .type('form')
     .send(params)
     .then((r) => {
+      const end = (new Date()).getTime()
+      const t = (end - start) / 1000;
+      console.log(`Checkout response time ${t} seconds`)
       return new Promise((ok, nooo) =>
         parse(r.text, (err, res) =>
           err != null ? nooo(err) : ok(res.trade.payments.pop().payment.pop().banks.pop())))
