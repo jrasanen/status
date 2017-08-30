@@ -1,0 +1,12 @@
+{
+  "name": "status",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {
+    "@rgrove/parse-xml": "^1.0.0",
+    "ramda": "^0.24.1",
+    "superagent": "^3.6.0",
+    "xml2js": "^0.4.19"
+  }
+}
