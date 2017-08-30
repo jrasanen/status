@@ -101,9 +101,7 @@ const open = () => {
         const url = data.$.url
         delete data.$
 
-        const payload = map((data, key) => {
-          return data.pop()
-        }, data)
+        const payload = map((data, key) => data.pop(), data)
 
         const start = (new Date()).getTime()
 
@@ -126,8 +124,8 @@ const open = () => {
         })
         .then((code) => {
           const end = (new Date()).getTime()
-          const t = (end - start) / 100;
-          console.log(`${code} > ${bankName} (${t} ms)`)
+          const t = (end - start) / 1000;
+          console.log(`${code} > ${bankName} (${t} s)`)
         })
       }, buttons)
     })
