@@ -127,14 +127,20 @@ const payload = (input) => {
 const open = (data) =>
   request.post(PSP_URL).type('form').send(payload(data? data : buildDemoParams()))
 
+
+/*
+ * Calculate difference between two timestamps
+ * @param {object} start Start time to substract current time from
+ * @returns {number} Time in seconds
+ */ 
+const timeDifference = (start) => ((new Date()).getTime() - start) / 1000;
+
 const benchmark = () => {
   const start = (new Date()).getTime()
   const fetches = []
   return open()
   .then((r) => {
-    const end = (new Date()).getTime()
-    const t = (end - start) / 1000;
-    fetches.push(Promise.resolve({ code: 200, provider: 'psp', time: t }))
+    fetches.push(Promise.resolve({ code: 200, provider: 'psp', time: timeDifference(start) }))
     return new Promise((ok, nooo) =>
       parse(r.text, (err, res) =>
         err != null ? nooo(err) : ok(res.trade.payments.pop().payment.pop().banks.pop())))
@@ -159,12 +165,10 @@ const benchmark = () => {
             )
         })
         .then((code) => {
-          const end = (new Date()).getTime()
-          const t = (end - start) / 1000;
           return {
             code: code,
             provider: provider,
-            time: t
+            time: timeDifference(start)
           }
         })
       )
