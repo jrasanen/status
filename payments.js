@@ -130,7 +130,7 @@ const open = (data) =>
 const benchmark = () => {
   const start = (new Date()).getTime()
   const fetches = []
-  open()
+  return open()
   .then((r) => {
     const end = (new Date()).getTime()
     const t = (end - start) / 1000;
@@ -170,9 +170,7 @@ const benchmark = () => {
       )
     }, buttons)
 
-    Promise.all(fetches).then(results => {
-      console.log(results)
-    })
+    return Promise.all(fetches)
   })
   .catch(console.error)
 }

@@ -1,2 +1,2 @@
 const payments = require('./payments')
-payments.benchmark();
+payments.benchmark().then(console.log);
