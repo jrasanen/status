@@ -7,6 +7,10 @@ const crypto = require('crypto');
 
 const PSP_URL = 'https://payment.checkout.fi'
 const ALGO = 'md5'
+const TIMEOUT = {
+  response: 1800,
+  deadline: 3500,
+}
 
 // Fields used required in mac calculation
 const mac_fields = [
