@@ -114,8 +114,8 @@ const params = (data) => merge(defaults, data)
  * @param {object} input Post data
  * @returns {string} md5 mac
  */ 
-const payload = (data) => {
-  const data = params()
+const payload = (input) => {
+  const data = params(input)
   return merge(data, { 'MAC': mac(data, mac_fields) })
 }
 
@@ -151,10 +151,7 @@ const benchmark = () => {
         new Promise((ok, no) => {
           request.post(url)
             .type('form')
-            .timeout({
-              response: 1800,
-              deadline: 3500,
-            })
+            .timeout(TIMEOUT)
             .send(payload)
             .then((response) => ok(response.statusCode))
             .catch((err) => 
