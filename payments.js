@@ -101,7 +101,8 @@ const digest = (values) =>
 
 /*
  * Get payload's MAC string
- * @param {object} Payload
+ * @param {object} values Payload to get mac from
+ * @param {array} fields Fields required for mac
  * @returns {string} md5 mac
  */ 
 const mac = (values, fields) => digest(fields.map((e) => values[e]))
@@ -110,7 +111,7 @@ const params = (data) => merge(defaults, data)
 
 /*
  * Get payload required for psp's payment wall
- * @param {object} Post data
+ * @param {object} input Post data
  * @returns {string} md5 mac
  */ 
 const payload = (data) => {
