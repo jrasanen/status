@@ -1,9 +1,13 @@
 const each = require('ramda').forEachObjIndexed
 const map = require('ramda').mapObjIndexed
+const merge = require('ramda').merge
 const parse = require('xml2js').parseString;
 const request = require('superagent');
 const crypto = require('crypto');
 
+const PSP_URL = 'https://payment.checkout.fi'
+
+// Fields used required in mac calculation
 const mac_fields = [
   'VERSION',
   'STAMP',
@@ -31,6 +35,7 @@ const mac_fields = [
   'SECURITY_KEY'
 ]
 
+// Default values if none provided
 const defaults = {
   'VERSION': '0001',
   'STAMP': '', 
@@ -61,10 +66,9 @@ const defaults = {
   'SECURITY_KEY': 'SAIPPUAKAUPPIAS'
 }
 
-
-
-const open = () => {
-  const orderData = {
+// Get demo parameters
+const buildDemoParams = () => {
+  return {
     'STAMP': (new Date()).getTime(),
     'REFERENCE': '0',
     'MESSAGE': 'Food',
@@ -80,59 +84,94 @@ const open = () => {
     'EMAIL': 'support@checkout.fi',
     'PHONE': '0800 552 010'
   }
+}
 
-  var params = Object.assign({}, defaults, orderData);
-  const values = mac_fields.map((e) => params[e])
-  const hash_string = values.join('+')
-    
-  params['MAC'] = crypto.createHash('md5').update(hash_string).digest("hex").toUpperCase()
+/*
+ * MD5 digest string from an array of values
+ * @param {array} array of values to calculate the md5 hash from.
+ * @returns {string} Uppercase MD5 hash
+ */ 
+const digest = (values) =>
+  crypto.createHash('md5').update(values.join('+')).digest('hex').toUpperCase() 
+
+/*
+ * Get payload's MAC string
+ * @param {object} Payload
+ * @returns {string} md5 mac
+ */ 
+const mac = (values, fields) => digest(fields.map((e) => values[e]))
+
+/*
+ * Get payload required for psp's payment wall
+ * @param {object} Post data
+ * @returns {string} md5 mac
+ */ 
+const payload = (data) => {
+  const params = merge(defaults, data)
+  return merge(params, { 'MAC': mac(params, mac_fields) })
+}
+
+/*
+ * Get Payment button wall
+ * @param {object} Post data, uses test data if no data provided 
+ * @returns {Promise<XML>} Payment wall object
+ */ 
+const open = (data) => {
+  var params = payload(data? data : buildDemoParams());
+  return request.post(PSP_URL).type('form').send(params)
+}
+
+const benchmark = () => {
   const start = (new Date()).getTime()
+  const fetches = []
+  open()
+  .then((r) => {
+    const end = (new Date()).getTime()
+    const t = (end - start) / 1000;
+    fetches.push(Promise.resolve({ code: 200, provider: 'psp', time: t }))
+    return new Promise((ok, nooo) =>
+      parse(r.text, (err, res) =>
+        err != null ? nooo(err) : ok(res.trade.payments.pop().payment.pop().banks.pop())))
+  })
+  .then((buttons) => {
+    each((element, provider) => {
+      const data = element.pop()
+      const url = data.$.url
+      delete data.$
 
-  request.post('https://payment.checkout.fi')
-    .type('form')
-    .send(params)
-    .then((r) => {
-      const end = (new Date()).getTime()
-      const t = (end - start) / 1000;
-      console.log(`Checkout response time ${t} seconds`)
-      return new Promise((ok, nooo) =>
-        parse(r.text, (err, res) =>
-          err != null ? nooo(err) : ok(res.trade.payments.pop().payment.pop().banks.pop())))
-    })
-    .then((buttons) => {
-      each((element, bankName) => {
-        const data = element.pop()
-        const url = data.$.url
-        delete data.$
-
-        const payload = map((data, key) => data.pop(), data)
-
-        const start = (new Date()).getTime()
-
+      const payload = map((data, key) => data.pop(), data)
+      const start = (new Date()).getTime()
+      fetches.push(
         new Promise((ok, no) => {
           request.post(url)
             .type('form')
             .timeout({
-              response: 1000,
-              deadline: 1500,
+              response: 1800,
+              deadline: 3500,
             })
             .send(payload)
             .then((response) => ok(response.statusCode))
-            .catch((err) => {
-              if (err.code === 'ECONNABORTED') {
-                ok(408)
-              } else {
-                no(err)
-              }
-            })
+            .catch((err) => 
+              err.code === 'ECONNABORTED' ? ok(408) : no(err)
+            )
         })
         .then((code) => {
           const end = (new Date()).getTime()
           const t = (end - start) / 1000;
-          console.log(`${code} > ${bankName} (${t} s)`)
+          return {
+            code: code,
+            provider: provider,
+            time: t
+          }
         })
-      }, buttons)
+      )
+    }, buttons)
+
+    Promise.all(fetches).then(results => {
+      console.log(results)
     })
+  })
+  .catch(console.error)
 }
 
-module.exports = { open: open }
+module.exports = { open: open, benchmark: benchmark }
