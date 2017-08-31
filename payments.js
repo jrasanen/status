@@ -6,6 +6,7 @@ const request = require('superagent');
 const crypto = require('crypto');
 
 const PSP_URL = 'https://payment.checkout.fi'
+const ALGO = 'md5'
 
 // Fields used required in mac calculation
 const mac_fields = [
@@ -92,7 +93,7 @@ const buildDemoParams = () => {
  * @returns {string} Uppercase MD5 hash
  */ 
 const digest = (values) =>
-  crypto.createHash('md5').update(values.join('+')).digest('hex').toUpperCase() 
+  crypto.createHash(ALGO).update(values.join('+')).digest('hex').toUpperCase() 
 
 /*
  * Get payload's MAC string
@@ -101,14 +102,16 @@ const digest = (values) =>
  */ 
 const mac = (values, fields) => digest(fields.map((e) => values[e]))
 
+const params = (data) => merge(defaults, data)
+
 /*
  * Get payload required for psp's payment wall
  * @param {object} Post data
  * @returns {string} md5 mac
  */ 
 const payload = (data) => {
-  const params = merge(defaults, data)
-  return merge(params, { 'MAC': mac(params, mac_fields) })
+  const data = params()
+  return merge(data, { 'MAC': mac(data, mac_fields) })
 }
 
 /*
@@ -116,10 +119,8 @@ const payload = (data) => {
  * @param {object} Post data, uses test data if no data provided 
  * @returns {Promise<XML>} Payment wall object
  */ 
-const open = (data) => {
-  var params = payload(data? data : buildDemoParams());
-  return request.post(PSP_URL).type('form').send(params)
-}
+const open = (data) =>
+  request.post(PSP_URL).type('form').send(payload(data? data : buildDemoParams()))
 
 const benchmark = () => {
   const start = (new Date()).getTime()
