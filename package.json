@@ -3,10 +3,33 @@
   "version": "1.0.0",
   "main": "index.js",
   "license": "MIT",
+  "scripts": {
+    "start": "concurrently 'yarn run run:dev' 'yarn run lint:watch'",
+    "run:dev": "nodemon -w src -x ts-node src/index.ts",
+    "build": "tsc",
+    "build:watch": "tsc -w",
+    "lint": "tslint --type-check -p tsconfig.json -c ./tslint.json 'src/**/*.ts' 'test/**/*.ts'",
+    "lint:watch": "watch 'npm run lint -- --force' ./src ./test -du --wait=0.2",
+    "pretest": "rm -fr ./build && tsc || exit 0",
+    "test": "NODE_PATH=./build NODE_ENV=test istanbul cover -x 'build/config/config.js' _mocha -- build/test",
+    "posttest": "istanbul check-coverage --statements 100 --branches 100 --functions 100 --lines 100"
+  },
   "dependencies": {
-    "@rgrove/parse-xml": "^1.0.0",
     "ramda": "^0.24.1",
     "superagent": "^3.6.0",
     "xml2js": "^0.4.19"
+  },
+  "devDependencies": {
+    "@types/ramda": "^0.24.9",
+    "@types/superagent": "^3.5.5",
+    "@types/xml2js": "^0.4.0",
+    "concurrently": "^3.5.0",
+    "nodemon": "^1.11.0",
+    "ts-node": "^3.3.0",
+    "tslint": "^5.7.0",
+    "tslint-eslint-rules": "^4.1.1",
+    "tslint-immutable": "^4.1.0",
+    "typescript": "^2.5.2",
+    "watch": "^1.0.2"
   }
 }
