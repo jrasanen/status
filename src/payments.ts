@@ -3,7 +3,8 @@ import { forEachObjIndexed as each, mapObjIndexed as map, merge } from 'ramda';
 import * as request from 'superagent';
 import { parseString as parse } from 'xml2js';
 
-interface Assoc { readonly [key: string]: string; }
+// tslint:disable-next-line:readonly-keyword
+interface Assoc { [key: string]: string; }
 interface BenchmarkResult { readonly code: number|string|undefined; readonly provider: string; readonly time: number; }
 type BenchmarkResponse = Promise<void | BenchmarkResult[]>;
 
